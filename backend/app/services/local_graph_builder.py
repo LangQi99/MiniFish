@@ -59,11 +59,17 @@ class LocalGraphBuilderService:
         chunk_size: int,
         chunk_overlap: int,
         progress_callback: Optional[Callable[[str, float], None]] = None,
+        on_graph_id: Optional[Callable[[str], None]] = None,
     ) -> Tuple[str, Dict[str, Any]]:
         if progress_callback:
             progress_callback("创建本地图谱（Neo4j）...", 0.02)
 
         graph_id = self.create_graph(project_id=project_id, name=graph_name, ontology=ontology)
+        if on_graph_id:
+            try:
+                on_graph_id(graph_id)
+            except Exception as e:
+                logger.warning(f"on_graph_id callback failed: {e}")
 
         chunks = TextProcessor.split_text(text, chunk_size, chunk_overlap)
         total = max(len(chunks), 1)

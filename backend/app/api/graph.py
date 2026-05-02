@@ -226,6 +226,12 @@ def build_graph():
                     progress = min(99, max(1, int(ratio * 95)))
                     task_manager.update_task(task_id, message=msg, progress=progress)
 
+                def on_graph_id_ready(gid: str):
+                    # 让前端尽早看到 graph_id,从而开始轮询 /api/graph/data
+                    project.graph_id = gid
+                    ProjectManager.save_project(project)
+                    build_logger.info(f"[{task_id}] graph_id 已分配并落盘: {gid}")
+
                 graph_id, graph_data = builder.build_graph_from_text(
                     project_id=project_id,
                     text=text,
@@ -234,6 +240,7 @@ def build_graph():
                     chunk_size=chunk_size,
                     chunk_overlap=chunk_overlap,
                     progress_callback=progress_cb,
+                    on_graph_id=on_graph_id_ready,
                 )
                 total_chunks = len(TextProcessor.split_text(text, chunk_size=chunk_size, overlap=chunk_overlap))
 
