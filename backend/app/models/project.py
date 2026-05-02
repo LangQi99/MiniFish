@@ -122,6 +122,10 @@ class ProjectManager:
         return os.path.join(cls._get_project_dir(project_id), 'personas.json')
 
     @classmethod
+    def get_graph_path(cls, project_id: str) -> str:
+        return os.path.join(cls._get_project_dir(project_id), 'graph.json')
+
+    @classmethod
     def create_project(cls, name: str = "Unnamed Project") -> Project:
         cls._ensure_projects_dir()
         project_id = f"proj_{uuid.uuid4().hex[:12]}"

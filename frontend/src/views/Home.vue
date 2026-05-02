@@ -3,7 +3,7 @@
     <nav class="navbar">
       <div class="nav-brand">MINIFISH</div>
       <div class="nav-links">
-        <span class="nav-link" @click="loadHistory">历史项目</span>
+        <span class="nav-link" @click="goDashboard">仪表盘 / 历史</span>
       </div>
     </nav>
 
@@ -22,9 +22,9 @@
 
           <div class="hero-desc">
             <p>
-              <span class="highlight-bold">Step 01</span> 上传长文本与一段模拟需求，并行构建知识图谱并实时绘制；
+              <span class="highlight-bold">Step 01</span> 上传长文本与一段模拟需求,并行构建知识图谱并实时绘制;
               <span class="highlight-bold">Step 02</span> 基于图谱节点并行生成详细 Agent 人设。
-              全流程并行加速，告别串行等待<span class="blinking-cursor">_</span>
+              全流程并行加速,告别串行等待<span class="blinking-cursor">_</span>
             </p>
           </div>
         </div>
@@ -45,26 +45,8 @@
               <span class="step-num">02</span>
               <div class="step-info">
                 <div class="step-title">生成 Agent 人设</div>
-                <div class="step-desc">基于图谱节点并行调用 LLM 生成详细人设（个人 / 群体两套模板）</div>
+                <div class="step-desc">基于图谱节点并行调用 LLM 生成详细人设(个人 / 群体两套模板)</div>
               </div>
-            </div>
-          </div>
-
-          <!-- 历史项目 -->
-          <div v-if="showHistory" class="history-list">
-            <div class="history-header">
-              <span>历史项目</span>
-              <span class="history-close" @click="showHistory = false">×</span>
-            </div>
-            <div v-if="!historyProjects.length" class="history-empty">暂无历史项目</div>
-            <div
-              v-for="p in historyProjects"
-              :key="p.project_id"
-              class="history-item"
-              @click="enterProject(p)"
-            >
-              <div class="hist-name">{{ p.name }}</div>
-              <div class="hist-meta">{{ p.project_id }} · {{ p.status }}</div>
             </div>
           </div>
         </div>
@@ -136,7 +118,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { listProjects } from '../api/graph'
+import { setPendingUpload } from '../store/pendingUpload'
 
 const router = useRouter()
 
@@ -145,9 +127,6 @@ const files = ref([])
 const loading = ref(false)
 const isDragOver = ref(false)
 const fileInput = ref(null)
-
-const showHistory = ref(false)
-const historyProjects = ref([])
 
 const canSubmit = computed(() => {
   return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
@@ -179,29 +158,11 @@ const removeFile = (idx) => { files.value.splice(idx, 1) }
 
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
-  import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
-    setPendingUpload(files.value, formData.value.simulationRequirement)
-    router.push({ name: 'Process', params: { projectId: 'new' } })
-  })
+  setPendingUpload(files.value, formData.value.simulationRequirement)
+  router.push('/dashboard/new')
 }
 
-const loadHistory = async () => {
-  showHistory.value = true
-  try {
-    const res = await listProjects(50)
-    if (res.success) historyProjects.value = res.data
-  } catch (e) {
-    console.warn(e)
-  }
-}
-
-const enterProject = (p) => {
-  if (['personas_completed', 'personas_generating'].includes(p.status)) {
-    router.push({ name: 'Personas', params: { projectId: p.project_id } })
-  } else {
-    router.push({ name: 'Process', params: { projectId: p.project_id } })
-  }
-}
+const goDashboard = () => router.push('/dashboard/new')
 </script>
 
 <style scoped>
@@ -227,7 +188,6 @@ const enterProject = (p) => {
 @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
 .dashboard-section { display: flex; gap: 60px; border-top: 1px solid #E5E5E5; padding-top: 60px; align-items: flex-start; }
-
 .left-panel { flex: 0.8; }
 .panel-header { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #999; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; }
 .status-dot { color: #FF4500; }
@@ -236,15 +196,6 @@ const enterProject = (p) => {
 .step-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; opacity: 0.4; }
 .step-title { font-weight: 600; margin-bottom: 4px; }
 .step-desc { font-size: 0.85rem; color: #666; }
-
-.history-list { margin-top: 24px; padding: 16px; border: 1px solid #E5E5E5; }
-.history-header { display: flex; justify-content: space-between; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #999; margin-bottom: 12px; }
-.history-close { cursor: pointer; }
-.history-empty { font-size: 0.85rem; color: #999; }
-.history-item { padding: 10px 12px; border: 1px solid #EFEFEF; margin-bottom: 6px; cursor: pointer; transition: all 0.2s; }
-.history-item:hover { background: #FAFAFA; border-color: #FF4500; }
-.hist-name { font-weight: 600; font-size: 13px; }
-.hist-meta { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #999; }
 
 .right-panel { flex: 1.2; }
 .console-box { border: 1px solid #CCC; padding: 8px; }

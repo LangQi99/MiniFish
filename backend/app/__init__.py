@@ -41,9 +41,16 @@ def create_app(config_class=Config):
         get_logger('minifish.request').debug(f"响应: {response.status_code}")
         return response
 
-    from .api import graph_bp, personas_bp
+    from .api import graph_bp, personas_bp, tasks_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(personas_bp, url_prefix='/api/personas')
+    app.register_blueprint(tasks_bp, url_prefix='/api/tasks')
+
+    # 启动时把磁盘上的任务恢复到内存,运行中的任务标记为中断
+    from .models.task import TaskManager
+    if not (debug_mode and not is_reloader_process):
+        # debug 模式下父进程不做恢复,避免和 reloader 子进程双写
+        TaskManager().load_from_disk()
 
     @app.route('/health')
     def health():

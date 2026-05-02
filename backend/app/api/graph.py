@@ -10,6 +10,7 @@
 - DELETE /api/graph/project/<id>      删除项目
 """
 
+import json
 import os
 import threading
 import traceback
@@ -199,7 +200,14 @@ def build_graph():
             return jsonify({"success": False, "error": "未找到本体定义"}), 400
 
         task_manager = TaskManager()
-        task_id = task_manager.create_task(f"构建图谱: {graph_name}")
+        task_id = task_manager.create_task(
+            task_type="graph_build",
+            metadata={
+                "project_id": project_id,
+                "project_name": project.name,
+                "graph_name": graph_name,
+            },
+        )
         logger.info(f"创建图谱构建任务: task_id={task_id}, project_id={project_id}")
 
         project.status = ProjectStatus.GRAPH_BUILDING
@@ -232,6 +240,14 @@ def build_graph():
                 project.graph_id = graph_id
                 project.status = ProjectStatus.GRAPH_COMPLETED
                 ProjectManager.save_project(project)
+
+                # 图谱节点+边落盘冷备(Neo4j 之外的可读快照)
+                try:
+                    snapshot = builder.get_graph_data(graph_id)
+                    with open(ProjectManager.get_graph_path(project_id), 'w', encoding='utf-8') as f:
+                        json.dump(snapshot, f, ensure_ascii=False, indent=2)
+                except Exception as e:
+                    build_logger.warning(f"[{task_id}] 图谱冷备写盘失败: {e}")
 
                 node_count = graph_data.get("node_count", 0)
                 edge_count = graph_data.get("edge_count", 0)
